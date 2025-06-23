@@ -261,3 +261,56 @@ export default function NavLinks() {
 - `<Link>` 컴포넌트로 전체 새로고침 없이 빠른 페이지 이동 가능
 - 자동 코드 스플리팅, prefetch로 성능 향상
 - `usePathname()`와 `clsx`로 현재 위치에 따라 활성 링크 스타일 적용
+
+---
+
+### 7. Fetching Data
+
+**Choosing how to fetch data**
+
+- **API** **레이어**
+
+  - 클라이언트에서 직접 DB 쿼리하면 보안상 위험(비밀 노출).
+  - 클라이언트에서 데이터 가져올 땐 서버에 API 레이어 만들어서 DB 접근해야 함.
+  - Next.js에서는 Route Handlers로 API 엔드포인트 만들 수 있음.
+
+- **DB** **쿼리**
+
+  - 서버 컴포넌트(React Server Component)에서는 API 레이어 없이 DB 직접 쿼리 가능(비밀 노출 위험 없음).
+  - API 엔드포인트 만들 때도 DB 쿼리 필요.
+
+- **React Server Component로 데이터 패칭**
+
+  - async/await로 비동기 데이터 패칭 가능.
+  - 서버에서만 실행되므로 DB 직접 쿼리해도 안전.
+  - API 레이어 없이 바로 DB 접근 가능해서 코드가 단순해짐.
+
+- **SQL** **사용** **이유**
+  - SQL은 관계형 DB 표준 쿼리 언어.
+  - 원하는 데이터만 정확하게 가져오고, 조작 가능.
+  - postgres.js 라이브러리로 SQL 인젝션 방지.
+  - SQL을 알면 다른 도구나 ORM 쓸 때도 이해에 도움 됨.
+
+<br>
+
+**Waterfall / Parallel data fetching**
+
+- **워터폴** **패칭**
+
+  - 각 데이터 요청이 앞선 요청이 끝나야 다음이 시작됨(순차 실행).
+  - 예: `fetchRevenue()` → 끝나면 `fetchLatestInvoices()` → 끝나면 `fetchCardData()`
+  - 의도적으로 순서가 필요할 때(예: ID를 먼저 받아야 할 때) 사용.
+  - 하지만 불필요하게 워터폴이 생기면 성능 저하.
+
+- **병렬** **패칭**
+  - 모든 데이터 요청을 동시에 시작함.
+  - JavaScript의 `Promise.all()` 또는 `Promise.allSettled()`로 구현.
+  - 병렬로 실행하면 전체 대기 시간이 줄어들어 더 빠름.
+  - **단점**: 병렬 요청 중 하나가 느리면 전체가 느려질 수 있음.
+    ```ts
+    const data = await Promise.all([
+      invoiceCountPromise,
+      customerCountPromise,
+      invoiceStatusPromise,
+    ]);
+    ```
