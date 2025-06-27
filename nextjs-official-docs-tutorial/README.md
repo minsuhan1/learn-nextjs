@@ -314,3 +314,53 @@ export default function NavLinks() {
       invoiceStatusPromise,
     ]);
     ```
+
+---
+
+### 8. Static and Dynamic Rendering
+
+**Static Rendering(정적 렌더링)**
+
+- **정의**: 빌드 타임(배포 시점)이나 데이터 재검증(revalidating data) 시 서버에서 미리 데이터를 패칭하고 HTML을 생성함.
+  - 재검증(Revalidating)
+    - 정적 렌더링된(캐시된) 데이터를 일정 주기나 조건에 따라 서버에서 새로 받아와 업데이트하는 것
+    - 최신 데이터가 필요할 때 캐시를 새로고침하는 개념
+    - Next.js에서는 ISR(Incremental Static Regeneration)로도 불림
+- **장점**
+  - 빠른 웹사이트(캐시된 결과를 전 세계에 배포)
+  - 서버 부하 감소(캐시 활용)
+  - SEO에 유리(크롤러가 바로 콘텐츠 확인 가능)
+- **단점**
+  - 데이터가 자주 바뀌거나 사용자별로 달라지는 대시보드에는 부적합(최신 데이터 반영 안 됨)
+
+**Dynamic Rendering(동적 렌더링)**
+
+- **정의**: 사용자가 페이지를 방문할 때마다 서버에서 데이터를 패칭하고 HTML을 생성함(요청 시점 렌더링).
+- **장점**
+  - 실시간 데이터 반영 가능
+  - 사용자별 맞춤 데이터 제공(예: 대시보드, 프로필)
+  - 요청 시점에만 알 수 있는 정보(쿠키, URL 파라미터 등) 활용 가능
+- **단점**
+  - 데이터 패칭이 느리면 전체 페이지 렌더링이 느려짐(가장 느린 요청에 전체가 묶임)
+    ```ts
+    export async function fetchRevenue() {
+      try {
+        // 3초 인위적 지연(실제 서비스에서는 사용 X)
+        console.log("Fetching revenue data...");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const data = await sql`SELECT * FROM revenue`;
+        console.log("Data fetch completed after 3 seconds.");
+        return data;
+      } catch (error) {
+        console.error("Database Error:", error);
+        throw new Error("Failed to fetch revenue data.");
+      }
+    }
+    ```
+    - 위처럼 데이터 패칭이 느리면, 전체 페이지가 데이터가 올 때까지 블로킹됨.
+
+**핵심** **요약**
+
+- Static Rendering: 빠르고 캐시 활용, 하지만 실시간/개인화 데이터엔 부적합
+- Dynamic Rendering: 실시간/개인화에 적합, 하지만 느린 데이터 패칭이 전체 속도에 영향
+- 동적 렌더링에서는 “가장 느린 데이터 요청”이 전체 페이지 속도를 결정함
