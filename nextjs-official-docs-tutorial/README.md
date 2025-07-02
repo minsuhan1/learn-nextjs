@@ -364,3 +364,94 @@ export default function NavLinks() {
 - Static Rendering: 빠르고 캐시 활용, 하지만 실시간/개인화 데이터엔 부적합
 - Dynamic Rendering: 실시간/개인화에 적합, 하지만 느린 데이터 패칭이 전체 속도에 영향
 - 동적 렌더링에서는 “가장 느린 데이터 요청”이 전체 페이지 속도를 결정함
+
+---
+
+### 9. Streaming
+
+**Streaming**
+
+- 데이터를 여러 chunk로 나눠서 순차적으로 클라이언트에 보내주는 방식
+- 느린 데이터 요청이 전체 페이지 로딩을 막지 않게 해줌
+- React 컴포넌트 모델과 잘 맞음
+
+**Streaming** **구현** **방법**
+
+- 페이지 단위: `loading.tsx` 파일 사용하면 Next.js가 자동으로 `<Suspense>` 처리해줌
+- 컴포넌트 단위: 직접 `<Suspense>`로 감싸서 더 세밀하게 제어 가능
+
+**loading.tsx와 Skeleton**
+
+- `loading.tsx`에 fallback UI 작성하면 페이지가 로딩 중일 때 보여줌
+- 단순한 ‘Loading…’ 대신 skeleton UI 넣으면 사용자 경험 더 좋아짐
+- skeleton UI는 정적 파일로 먼저 전송됨
+
+**Route Groups**
+
+- `loading.tsx`가 상위 폴더에 있으면 하위 경로에도 적용됨
+- Route Group(`(overview)` 등) 폴더로 감싸면 특정 경로에만 loading UI 적용 가능
+- 괄호 폴더는 URL에 노출 안 됨
+
+**컴포넌트** **Streaming**
+
+- 데이터 fetch를 각 컴포넌트로 내리면 해당 부분만 Suspense로 감쌀 수 있음
+- 예시: `<RevenueChart>` 컴포넌트에서 직접 데이터 fetch, Suspense로 감싸서 skeleton 보여줌
+- `<LatestInvoices>`도 같은 방식으로 처리 가능
+
+**컴포넌트** **그룹화**
+
+- 여러 컴포넌트를 한 번에 Suspense로 감싸면 skeleton 한 번만 보여주고, 다 같이 로드됨
+- wrapper 컴포넌트(`CardWrapper` 등)로 묶어서 사용
+
+**Suspense boundary** **위치** **선정**
+
+- 사용자 경험, 데이터 의존도에 따라 Suspense boundary 위치 결정해야 함
+- 너무 세분화하면 UI가 하나씩 툭툭 튀어나오는 느낌 날 수 있음
+- 섹션별, 전체, 개별 등 다양한 방식 실험해볼 것 추천함
+- 일반적으로 데이터 fetch는 각 컴포넌트로 내리는 게 좋음
+
+---
+
+### 10. Partial Prerendering
+
+- Partial Prerendering(PPR)은 Next.js 14에서 도입된 실험적 기능으로, 한 라우트 내에서 정적(static) 렌더링과 동적(dynamic) 렌더링, 그리고 스트리밍을 결합할 수 있게 해줌
+- 예를 들어, 상품 정보 페이지에서 네비게이션 바와 상품 정보는 정적으로 미리 렌더링하고, 장바구니나 추천 상품 등 개인화된 동적 콘텐츠는 비동기로 불러올 수 있음
+- 사용자는 빠르게 정적 셸(shell)을 받아볼 수 있고, 동적 콘텐츠는 “구멍(holes)“에 비동기로 스트리밍되어 전체 로딩 시간을 줄일 수 있음
+- PPR은 React의 Suspense를 활용하여, 동적 콘텐츠가 준비될 때까지 해당 부분의 렌더링을 미룸
+- 사용 방법: ‎`next.config.ts`에 experimental 옵션을 추가하고, 동적이 필요한 레이아웃 파일에 ‎`experimental_ppr`을 true로 설정
+- 현재 PPR은 Next.js의 canary(실험) 버전에서만 사용할 수 있으며, 아직 프로덕션 환경에서는 권장되지 않음
+- PPR의 장점: 코드 변경 없이 Suspense로 동적 부분만 감싸면 Next.js가 자동으로 정적/동적 부분을 구분해 처리해준다
+
+![alt text](readme-assets/10-1.png)
+![alt text](readme-assets/10-2.png)
+
+**PPR과 Streaming의 차이점?**
+
+![alt text](readme-assets/10-3.png)
+
+**Partial Prerendering (PPR)**
+
+- **정적/동적 분리\***
+  - 빌드 타임에 가능한 모든 부분(정적 콘텐츠)은 미리 렌더링해서 HTML로 만들어 둠
+  - 동적 데이터가 필요한 부분(예: 사용자별 정보, 실시간 데이터 등)은 Suspense로 감싸고, 이 부분만 런타임(요청 시)에 서버에서 렌더링
+- **장점**
+  - 사용자는 페이지의 “정적 shell”을 즉시 받아볼 수 있어, 첫 화면이 매우 빠르게 보임
+  - 동적 부분은 나중에 비동기로 채워지므로, 전체적인 체감 속도가 빨라짐
+- **적용** **시점**
+  - 빌드 타임 + 요청 시(동적 부분만)
+- **실제** **동작**
+  - 정적 부분은 CDN 등에서 바로 서빙, 동적 부분만 서버에서 처리
+
+**Streaming/Suspense**
+
+- **전체** **페이지** **렌더링**
+  - 페이지 전체를 요청 시점에 서버에서 렌더링
+  - Suspense를 사용하면, 데이터가 느린 부분은 fallback UI(스켈레톤 등)를 먼저 보여주고, 데이터가 준비되면 해당 부분만 교체
+  - 여러 데이터 fetch를 병렬로 처리할 수 있음
+- **장점**
+  - 동적 데이터가 많거나, 모든 부분이 자주 바뀌는 페이지에 적합
+  - 컴포넌트 단위로 세밀하게 streaming 제어 가능
+- **적용** **시점**
+  - 오직 요청 시(런타임)
+- **실제** **동작**
+  - 모든 HTML이 서버에서 실시간으로 생성되어 전송
