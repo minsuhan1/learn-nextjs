@@ -431,7 +431,7 @@ export default function NavLinks() {
 
 **Partial Prerendering (PPR)**
 
-- **정적/동적 분리\***
+- **정적/동적 분리**
   - 빌드 타임에 가능한 모든 부분(정적 콘텐츠)은 미리 렌더링해서 HTML로 만들어 둠
   - 동적 데이터가 필요한 부분(예: 사용자별 정보, 실시간 데이터 등)은 Suspense로 감싸고, 이 부분만 런타임(요청 시)에 서버에서 렌더링
 - **장점**
@@ -455,3 +455,20 @@ export default function NavLinks() {
   - 오직 요청 시(런타임)
 - **실제** **동작**
   - 모든 HTML이 서버에서 실시간으로 생성되어 전송
+
+---
+
+### 11. Adding Search and Pagination
+
+- useSearchParams: 현재 URL의 쿼리 파라미터 읽을 때 씀.
+  - /dashboard/invoices?page=1&query=abc → {page: ‘1’, query: ‘abc’}
+- usePathname: 현재 경로(pathname) 읽을 때 씀
+  - /dashboard/invoices
+- useRouter: 클라이언트 컴포넌트에서 프로그래밍적으로 라우팅(이동)할 때 씀.
+  - replace, push 등 메서드 제공
+
+**URL search params를 사용할 때의 장점**
+
+- URL에 검색어/필터가 들어가므로 사용자가 현재 상태를 북마크하거나 공유할 수 있음.
+- 서버사이드 렌더링할 때 URL 파라미터로 바로 초기 상태 만들 수 있어서 편함.
+- 검색어/필터가 URL에 있으니, 별도 코드 없이도 사용자 행동 추적(분석)이 쉬움
