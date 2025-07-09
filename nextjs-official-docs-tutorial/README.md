@@ -472,3 +472,70 @@ export default function NavLinks() {
 - URL에 검색어/필터가 들어가므로 사용자가 현재 상태를 북마크하거나 공유할 수 있음.
 - 서버사이드 렌더링할 때 URL 파라미터로 바로 초기 상태 만들 수 있어서 편함.
 - 검색어/필터가 URL에 있으니, 별도 코드 없이도 사용자 행동 추적(분석)이 쉬움
+
+---
+
+### 12. Mutating Data
+
+**React Server Actions**
+
+- 클라이언트나 서버 컴포넌트에서 서버의 비동기 함수를 직접 호출할 수 있게 해주는 기능
+- 기존처럼 별도의 API 엔드포인트를 만들 필요 없이, 서버에서 데이터를 생성·수정·삭제하는 코드를 바로 작성해서 사용할 수 있음
+- 보안 측면에서도 다음과 같은 장점을 갖는다
+  - 암호화된 클로저(closure)
+  - 엄격한 입력값 검증
+  - 에러 메시지 해싱
+  - 호스트 제한 등
+
+**revalidatePath**
+
+- 데이터가 변경된 후, 특정 경로의 Next.js 캐시를 무효화해서 최신 데이터로 갱신함
+- 주로 데이터 변경(생성/수정/삭제) 후 호출
+
+**React Server Actions와 revalidatePath, redirect를 활용한 데이터 변형 예시**
+
+- **1) Server Action 함수 만들기**
+
+  ```ts
+  // app/lib/actions.ts
+
+  "use server";
+  import { revalidatePath } from "next/cache";
+  import { redirect } from "next/navigation";
+  import postgres from "postgres";
+
+  const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+
+  export async function createInvoice(formData: FormData) {
+    const customerId = formData.get("customerId");
+    const amount = Number(formData.get("amount")) * 100;
+    const status = formData.get("status");
+    const date = new Date().toISOString().split("T")[0];
+
+    await sql`
+      INSERT INTO invoices (customer_id, amount, status, date)
+      VALUES (${customerId}, ${amount}, ${status}, ${date})
+    `;
+    // 데이터 변경 후 캐시 무효화
+    revalidatePath("/dashboard/invoices");
+    // 페이지 이동
+    redirect("/dashboard/invoices");
+  }
+  ```
+
+- **2) 폼에서 Server Action 연결**
+
+  ```ts
+  // app/ui/invoices/create-form.tsx
+
+  import { createInvoice } from "@/app/lib/actions";
+
+  export default function Form({ customers }) {
+    return (
+      <form action={createInvoice}>
+        {/* 폼 필드들 */}
+        <button type="submit">저장</button>
+      </form>
+    );
+  }
+  ```
