@@ -539,3 +539,38 @@ export default function NavLinks() {
     );
   }
   ```
+
+---
+
+### 13. Handling Errors
+
+- Server Action에서 에러 처리하려면 try/catch 사용
+- redirect는 try/catch 밖에서 호출해야 함 - redirect 내부적으로 에러를 throw하기 때문
+  **error.tsx**
+- uncaught exception 발생 시, Next.js의 `error.tsx` 파일로 처리 가능
+  - 클라이언트 컴포넌트여야 함 (“use client” 필요)
+  - error, reset props
+  - reset 호출 시 에러 경계에서 라우트 세그먼트를 리렌더링
+  ```ts
+  "use client";
+  import { useEffect } from "react";
+  export default function Error({ error, reset }) {
+    useEffect(() => {
+      console.error(error);
+    }, [error]);
+    return (
+      <main>
+        <h2>Something went wrong!</h2>
+        <button onClick={() => reset()}>Try again</button>
+      </main>
+    );
+  }
+  ```
+
+**notFound function, not-found.tsx**
+
+- 404 에러는 notFound 함수와 not-found.tsx 파일로 처리
+- 리소스 없을 때 notFound() 호출
+- notFound가 error.tsx보다 우선 적용됨
+  - error.tsx: 예기치 못한 에러 처리
+  - notFound: 특정 리소스 없을 때 404 처리
